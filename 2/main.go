@@ -7,46 +7,63 @@ import (
 	"strings"
 )
 
-func checkPossibleGames(filename string, red, green, blue int) ([]int, error) {
+func checkPossibleGames(filename string, red, green, blue int) (int, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	lines := strings.Split(string(content), "\n")
-	var possibleGames []int
-	fmt.Println(lines)
-	for i, line := range lines {
+	var totalPower int
+
+	for _, line := range lines {
 		if line == "" {
 			continue
 		}
 
-		// Parsing game information
 		gameInfo := strings.Split(strings.Split(line, ": ")[1], "; ")
-		var totalRed, totalGreen, totalBlue int
+		var totalRed, totalGreen, totalBlue []int
 
-		// Calculating total cubes revealed in each game
 		for _, subset := range gameInfo {
 			cubes := strings.Split(subset, ", ")
 			for _, cube := range cubes {
 				switch {
 				case strings.Contains(cube, "red"):
-					totalRed += extractNumber(cube)
+					totalRed = append(totalRed, extractNumber(cube))
 				case strings.Contains(cube, "green"):
-					totalGreen += extractNumber(cube)
+					totalGreen = append(totalGreen, extractNumber(cube))
 				case strings.Contains(cube, "blue"):
-					totalBlue += extractNumber(cube)
+					totalBlue = append(totalBlue, extractNumber(cube))
 				}
 			}
 		}
-		fmt.Println("TotalRED: ", totalRed, "TotalGreen ", totalGreen, "totalBlue: ", totalBlue)
-		// Checking if the total cubes match the constraints
-		if totalRed <= red && totalGreen <= green && totalBlue <= blue {
-			possibleGames = append(possibleGames, i+1) // Adding 1 to match game numbering
+
+		minRed := minCubes(totalRed)
+		minGreen := minCubes(totalGreen)
+		minBlue := minCubes(totalBlue)
+
+		fmt.Println("Minred", minRed)
+		fmt.Println("Mingreen", minGreen)
+		fmt.Println("Minblue", minBlue)
+
+		power := minRed * minGreen * minBlue
+		totalPower += power
+	}
+
+	return totalPower, nil
+}
+
+func minCubes(totalColor []int) int {
+	minNum := totalColor[0]
+
+	// Iterate through the array to find the maximum number
+	for _, num := range totalColor {
+		if num > minNum {
+			minNum = num
 		}
 	}
 
-	return possibleGames, nil
+	return minNum
 }
 
 func extractNumber(s string) int {
@@ -58,12 +75,11 @@ func extractNumber(s string) int {
 	return num
 }
 
-func sumGames(arr []int) int {
-	sum := 0
-	for _, num := range arr {
-		sum += num
+func max(a, b int) int {
+	if a > b {
+		return a
 	}
-	return sum
+	return b
 }
 
 func main() {
@@ -71,17 +87,11 @@ func main() {
 	green := 13
 	blue := 14
 
-	possibleGames, err := checkPossibleGames("data.txt", red, green, blue)
+	totalPower, err := checkPossibleGames("data.txt", red, green, blue)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if len(possibleGames) > 0 {
-		fmt.Println("Possible games:", possibleGames)
-		sum := sumGames(possibleGames)
-		fmt.Println("Sum: ", sum)
-	} else {
-		fmt.Println("No possible games found.")
-	}
+	fmt.Println("Sum of powers of minimum sets:", totalPower)
 
 }
